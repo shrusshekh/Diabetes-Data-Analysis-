@@ -1,0 +1,737 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// max lines greater than given file
+#define maximum_lines 512
+// line char array must be defined to be of length greater than the longest line
+#define maximum_length 512
+
+// This function takes in an input file and parses the relevant fields from each
+// line
+void parsing(FILE *input, int *year, char location[][maximum_lines],
+             char age_Group[][maximum_length], char sex[][maximum_length], double *value,
+             int *num_Lines, int *canada_Start, int *canada_End, int *que_Start,
+             int *que_End, int *ont_Start, int *ont_End, int *alb_Start,
+             int *alb_End, int *bc_Start, int *bc_End) {
+  // initilize array to hold max length of line
+  char line[maximum_length];
+  // initialize counter variable for lines
+  int i = 0;
+
+  // Skip header line
+  fgets(line, sizeof(line), input);
+
+  // parsing each line from file
+  while (fgets(line, sizeof(line), input) != NULL && i < maximum_lines) {
+
+    char *token; // Declare pointer var to hold token
+
+    int field_Count = 0; // Declare counter var in each line
+
+    // equating each token to splitting line into sections, comma as
+    // delimiter(seperator)
+    token = strtok(line, ",");
+    // loop only when token isn't null and when section count is greater than 14
+    while (token != NULL && field_Count < 14) {
+
+      // each statment is extracting the relevant section data and storing into its list at i
+      if (field_Count == 0) { // condition for year section
+        sscanf(token, "\"%d\"", &year[i]);
+      } else if (field_Count == 1) { // condition for location section
+
+        sscanf(token, "\"%[^\"]\"", location[i]);
+
+        // Update stat and end index of each location
+        if (strcmp(location[i], "Canada (excluding territories)") ==
+            0) { // updating start and end index of each location
+          /*
+          if variable canada_Start = -1 that means that the start index of the
+          canada region has not yet been set therefore we can set it now. -1 is
+          used as it is not a valid array index and therefore does not interrupt
+          data in the array when used for computation
+            */
+
+          //  This part of the code is for extracting data from the "location" field in each line of the input file, and updating the start and end indices for each region within the arrays.
+          
+          // conditions for extracting location section in each line
+          //  updates start and end indices for each please
+          if (*canada_Start == -1) {
+            *canada_Start = i;
+          }
+          *canada_End = i;
+        } else if (strcmp(location[i], "British Columbia") == 0) {
+          if (*bc_Start == -1) {
+            *bc_Start = i;
+          }
+          *bc_End = i;
+        } else if (strcmp(location[i], "Quebec") == 0) {
+          if (*que_Start == -1) {
+            *que_Start = i;
+          }
+          *que_End = i;
+
+        } else if (strcmp(location[i], "Alberta") == 0) {
+          if (*alb_Start == -1) {
+            *alb_Start = i;
+          }
+          *alb_End = i;
+
+        } else if (strcmp(location[i], "Ontario") == 0) {
+          if (*ont_Start == -1) {
+            *ont_Start = i;
+          }
+          *ont_End = i;
+        }
+        // conditions for relating to the section count and inputting token into
+        // specified list with i
+      } else if (field_Count == 3) {
+        sscanf(token, "\"%[^\"]\"", age_Group[i]);
+      } else if (field_Count == 4) {
+        sscanf(token, "\"%[^\"]\"", sex[i]);
+      } else if (field_Count == 13) {
+        sscanf(token, "\"%lf\"", &value[i]);
+      }
+      // if blank value is seen, then skip to next
+      token = strtok(NULL, ",");
+      field_Count++;
+    }
+
+    i++;
+  }
+
+  *num_Lines = i;
+}
+
+// main function where file is opened, read and verified if file can be opened,
+// otherwise exiting out of program
+int main() {
+  FILE *input = fopen("statscan_diabetes.csv", "r"), *output_file;
+  if (input == NULL) {
+    printf("File cannot be opened.\n");
+    exit(-1);
+  }
+
+  // declaring necessary vars, with required arrays defined previously
+  int year[maximum_lines];
+  char location[maximum_lines][maximum_length];
+  char age_Group[maximum_lines][maximum_length];
+  char sex[maximum_lines][maximum_length];
+  double value[maximum_lines];
+  int num_Lines = 0;
+
+  // declaring variables for the start and end indicies
+  int canada_Start = -1, que_Start = -1, ont_Start = -1, alb_Start = -1,
+      bc_Start = -1;
+  int canada_End = -1, que_End = -1, ont_End = -1, alb_End = -1, bc_End = -1;
+
+  // calling parsing function with required paramters
+  parsing(input, year, location, age_Group, sex, value, &num_Lines,
+          &canada_Start, &canada_End, &que_Start, &que_End, &ont_Start,
+          &ont_End, &alb_Start, &alb_End, &bc_Start, &bc_End);
+  // closing file
+  fclose(input);
+
+  ////////////////////////////////////// QUESTION 1a)
+  /////////////////////////////////////////////
+
+  /*
+  This section of the program calculates the average diabetes value for each of
+  the four provinces, and then outputs a table displaying these averages.
+
+  The variables count and sum are initialized to zero. These variables will be
+  used to calculate the average values.
+
+  The code then calculates the average diabetes value for Quebec by looping
+  through the data array from que_Start to que_End. For each non-zero value, it
+  increments the count variable and adds the value to the sum variable. The
+  average is then calculated and stored in que_Ave[0].
+
+  This process is repeated for the Ontario, British Columbia, and Alberta
+  provinces.
+
+  Finally, a table is outputted that displays the diabetes averages for each
+  province. The printf function is used to format the output in a table-like
+  structure.
+    */
+
+  int count;
+  double sum;
+
+  // QUEBEC CALCULATIONS
+  count = sum = 0;
+  double que_Ave[11];
+  for (int j = que_Start; j <= que_End; j++) {
+    if (value[j] != 0) {
+      sum += value[j];
+      count++;
+    }
+  }
+  que_Ave[0] = sum / count;
+
+  // BRITISH COLUMBIA CALCULATIONS
+  count = sum = 0;
+  double bc_Ave[11];
+  for (int j = bc_Start; j <= bc_End; j++) {
+    if (value[j] != 0) {
+      sum += value[j];
+      count++;
+    }
+  }
+  bc_Ave[0] = sum / count;
+
+  // ALBERTA CALCULATION
+  count = sum = 0;
+  double alb_Ave[11];
+  for (int j = alb_Start; j <= alb_End; j++) {
+    if (value[j] != 0) {
+      sum += value[j];
+      count++;
+    }
+  }
+  alb_Ave[0] = sum / count;
+
+  // ONTARIO CALCULATIONS
+  count = sum = 0;
+  double ont_Ave[11];
+  for (int j = ont_Start; j <= ont_End; j++) {
+    if (value[j] != 0) {
+      sum += value[j];
+      count++;
+    }
+  }
+  ont_Ave[0] = sum / count;
+
+printf("1a) Diabetes averages by province:\n");
+printf("╔══════════════════╦══════════╗\n");
+printf("║ Province         ║ Average  ║\n");
+printf("╠══════════════════╬══════════╣\n");
+printf("║ Quebec           ║ %7.2lf%% ║\n", que_Ave[0]);
+printf("║ Ontario          ║ %7.2lf%% ║\n", ont_Ave[0]);
+printf("║ British Columbia ║ %7.2lf%% ║\n", bc_Ave[0]);
+printf("║ Alberta          ║ %7.2lf%% ║\n", alb_Ave[0]);
+printf("╚══════════════════╩══════════╝\n");
+
+
+  ////////////////////////////////////// QUESTION 1b)
+  /////////////////////////////////////////////
+
+  /*
+    This code calculates the average diabetes rate for the whole country of
+    Canada and stores it in the array can_Ave.\ The code:
+    --> Initializes the variables count and sum to 0 and declares the array
+    can_Ave to store the calculated average.
+    --> Iterates over the values for the whole country (canada_Start to
+    canada_End) and sums up the values that are not equal to 0 while also
+    incrementing the count variable for each non-zero value found.
+    --> Calculates the average by dividing the sum by the count and storing it
+    in the can_Ave array.
+    --> Outputs the result in a formatted table with the country name and the
+    average diabetes rate.
+    */
+  printf("\n");
+  count = 0;
+  sum = 0;
+  double can_Ave[11];
+  for (int j = canada_Start; j <= canada_End; j++) {
+    for (int k = 0; k < 1; k++) {
+      if (value[j] != 0) {
+        sum = sum + value[j];
+        count++;
+      }
+    }
+  }
+  double tempSum = 0;
+  for (int i = 0; i < count; i++) {
+    tempSum += (sum / count) / count;
+  }
+  can_Ave[0] = tempSum;
+
+  printf("1b) Diabetes averages for Canada:\n");
+  printf("╔═══════════════╦═════════╗\n");
+  printf("║ Location      ║ Average ║\n");
+  printf("╠═══════════════╬═════════╣\n");
+  printf("║ Canada        ║ %.2lf%%  ║\n", can_Ave[0]);
+  printf("╚═══════════════╩═════════╝\n");
+
+
+  ////////////////////////////////////// QUESTION 1c)
+  /////////////////////////////////////////////
+
+  // Print header for section 1c showing diabetes average for each year by
+  // province
+  printf("\n1c) Diabetes average for each year by province:\n");
+  printf("・-------・--------・--------・--------・--------・----------・\n");
+  printf("| Year   | Canada  | Ontario | Quebec  | BC      | Alberta   |\n");
+  printf("・-------・--------・--------・--------・--------・----------・\n");
+
+  //// Loop through years 2015-2021 and calculate the diabetes averages for each
+  ///province for each year
+  for (int i = 1; i <= 7; i++) {
+    // Initialize variables to hold sum and count of valid values for each
+    // province
+    double can_sum = 0, ont_sum = 0, que_sum = 0, bc_sum = 0, alb_sum = 0;
+    int can_count = 0, ont_count = 0, que_count = 0, bc_count = 0,
+        alb_count = 0;
+    for (int j = canada_Start + i - 1; j <= canada_End; j += 7) {
+      double val = value[j];
+      if (val != 0) {
+        can_sum += val;
+        can_count++;
+      }
+    }
+    // Calculate the average for Canada for the current year and set it in the
+    // appropriate array index
+    if (can_count > 0) {
+      can_Ave[i] = can_sum / can_count;
+    }
+    for (int j = ont_Start + i - 1; j <= ont_End; j += 7) {
+      double val = value[j];
+      if (val != 0) {
+        ont_sum += val;
+        ont_count++;
+      }
+    }
+    if (ont_count > 0) {
+      ont_Ave[i] = ont_sum / ont_count;
+    }
+    for (int j = que_Start + i - 1; j <= que_End; j += 7) {
+      double val = value[j];
+      if (val != 0) {
+        que_sum += val;
+        que_count++;
+      }
+    }
+    if (que_count > 0) {
+      que_Ave[i] = que_sum / que_count;
+    }
+    for (int j = bc_Start + i - 1; j <= bc_End; j += 7) {
+      double val = value[j];
+      if (val != 0) {
+        bc_sum += val;
+        bc_count++;
+      }
+    }
+    if (bc_count > 0) {
+      bc_Ave[i] = bc_sum / bc_count;
+    }
+    for (int j = alb_Start + i - 1; j <= alb_End; j += 7) {
+      double val = value[j];
+      if (val != 0) {
+        alb_sum += val;
+        alb_count++;
+      }
+    }
+    if (alb_count > 0) {
+      alb_Ave[i] = alb_sum / alb_count;
+    }
+    printf("| %d   | %6.2lf%% | %6.2lf%% | %6.2lf%% | %6.2lf%% | %7.2lf%%  |\n",
+           (2015 + i - 1), can_Ave[i], ont_Ave[i], que_Ave[i], bc_Ave[i],
+           alb_Ave[i]);
+    printf("・-------・--------・--------・--------・--------・----------・\n");
+  }
+
+  ////////////////////////////////////// QUESTION 1d)
+  /////////////////////////////////////////////
+
+  // Iterate over 3 different age groups in Ontario and calculate the average
+  // percentage of people with diabetes for each group
+  printf("\n");
+  for (int i = 0; i < 6; i++) {
+    count = 0; // initialize count to 0 for each group
+    sum = 0;   // initialize sum to 0 for each group
+
+    // Iterate over values in a range of indices in an array for Ontario
+    for (int j = ont_Start; j <= ont_End; j++) {
+      for (int k = 0; k < 1; k++) {
+        // If age group matches current iteration and value is not 0, add value
+        // to sum and increment count
+        if (strcmp(age_Group[j], "35 to 49 years") == 0) {
+          if (value[j] != 0) {
+            sum += value[j];
+            count++;
+          }
+        }
+      }
+    }
+    ont_Ave[8] = sum / count; // calculate average for  current group and store it into an array
+    printf("1d) Diabetes average for Ontario (35-49 years): %.2lf%%\n",
+           ont_Ave[8]);
+
+    count = 0;
+    sum = 0;
+    for (int j = ont_Start; j <= ont_End; j++) {
+      for (int k = 0; k < 1; k++) {
+        if (strcmp(age_Group[j], "50 to 64 years") == 0) {
+          if (value[j] != 0) {
+            sum += value[j];
+            count++;
+          }
+        }
+      }
+    }
+    ont_Ave[9] = sum / count;
+    printf("1d) Diabetes average for Ontario (50-64 years): %.2lf%%\n",
+           ont_Ave[9]);
+
+    count = 0;
+    sum = 0;
+    for (int j = ont_Start; j <= ont_End; j++) {
+      for (int k = 0; k < 1; k++) {
+        if (strcmp(age_Group[j], "65 years and over") == 0) {
+          if (value[j] != 0) {
+            sum += value[j];
+            count++;
+          }
+        }
+      }
+    }
+    ont_Ave[10] = sum / count;
+    printf("1d) Diabetes average for Ontario (65+ years): %.2lf%%\n",
+           ont_Ave[10]);
+
+    printf("\n");
+
+    count = 0;
+    sum = 0;
+    for (int j = canada_Start; j <= canada_End; j++) {
+      for (int k = 0; k < 1; k++) {
+        if (strcmp(age_Group[j], "35 to 49 years") == 0) {
+          if (value[j] != 0) {
+            sum += value[j];
+            count++;
+          }
+        }
+      }
+    }
+    can_Ave[8] = sum / count;
+    printf("1d) Diabetes average for Canada (35-49 years): %.2lf%%\n",
+           can_Ave[8]);
+
+    count = 0;
+    sum = 0;
+    for (int j = canada_Start; j <= canada_End; j++) {
+      for (int k = 0; k < 1; k++) {
+        if (strcmp(age_Group[j], "50 to 64 years") == 0) {
+          if (value[j] != 0) {
+            sum += value[j];
+            count++;
+          }
+        }
+      }
+    }
+    can_Ave[9] = sum / count;
+    printf("1d) Diabetes average for Canada (50-64 years): %.2lf%%\n",
+           can_Ave[9]);
+
+    count = 0;
+    sum = 0;
+    for (int j = canada_Start; j <= canada_End; j++) {
+      for (int k = 0; k < 1; k++) {
+        if (strcmp(age_Group[j], "65 years and over") == 0) {
+          if (value[j] != 0) {
+            sum += value[j];
+            count++;
+          }
+        }
+      }
+    }
+    can_Ave[10] = sum / count;
+    printf("1d) Diabetes average for Canada (65+ years): %.2lf%%\n",
+           can_Ave[10]);
+
+    printf("\n");
+
+    count = 0;
+    sum = 0;
+    for (int j = que_Start; j <= que_End; j++) {
+      for (int k = 0; k < 1; k++) {
+        if (strcmp(age_Group[j], "35 to 49 years") == 0) {
+          if (value[j] != 0) {
+            sum += value[j];
+            count++;
+          }
+        }
+      }
+    }
+    que_Ave[8] = sum / count;
+    printf("1d) Average for Quebec (35-49 years): %.2lf%%\n", que_Ave[8]);
+
+    count = 0;
+    sum = 0;
+    for (int j = que_Start; j <= que_End; j++) {
+      for (int k = 0; k < 1; k++) {
+        if (strcmp(age_Group[j], "50 to 64 years") == 0) {
+          if (value[j] != 0) {
+            sum += value[j];
+            count++;
+          }
+        }
+      }
+    }
+    que_Ave[9] = sum / count;
+    printf("1d) Diabetes average for Quebec (50-64 years): %.2lf%%\n",
+           que_Ave[9]);
+
+    count = 0;
+    sum = 0;
+    for (int j = que_Start; j <= que_End; j++) {
+      for (int k = 0; k < 1; k++) {
+        if (strcmp(age_Group[j], "65 years and over") == 0) {
+          if (value[j] != 0) {
+            sum += value[j];
+            count++;
+          }
+        }
+      }
+    }
+    que_Ave[10] = sum / count;
+    printf("1d) Diabetes average for Quebec (65+ years): %.2lf%%\n",
+           que_Ave[10]);
+
+    printf("\n");
+
+    count = 0;
+    sum = 0;
+    for (int j = alb_Start; j <= alb_End; j++) {
+      for (int k = 0; k < 1; k++) {
+        if (strcmp(age_Group[j], "35 to 49 years") == 0) {
+          if (value[j] != 0) {
+            sum += value[j];
+            count++;
+          }
+        }
+      }
+    }
+    alb_Ave[8] = sum / count;
+    printf("1d) Diabetes average for Alberta (35-49 years): %.2lf%%\n",
+           alb_Ave[8]);
+
+    count = 0;
+    sum = 0;
+    for (int j = alb_Start; j <= alb_End; j++) {
+      for (int k = 0; k < 1; k++) {
+        if (strcmp(age_Group[j], "50 to 64 years") == 0) {
+          if (value[j] != 0) {
+            sum += value[j];
+            count++;
+          }
+        }
+      }
+    }
+    alb_Ave[9] = sum / count;
+    printf("1d) Diabetes average for Alberta (50-64 years): %.2lf%%\n",
+           alb_Ave[9]);
+
+    count = 0;
+    sum = 0;
+    for (int j = alb_Start; j <= alb_End; j++) {
+      for (int k = 0; k < 1; k++) {
+        if (strcmp(age_Group[j], "65 years and over") == 0) {
+          if (value[j] != 0) {
+            sum += value[j];
+            count++;
+          }
+        }
+      }
+    }
+    alb_Ave[10] = sum / count;
+    printf("1d) Diabetes average for Alberta (65+ years): %.2lf%%\n",
+           alb_Ave[10]);
+
+    printf("\n");
+
+    count = 0;
+    sum = 0;
+    for (int j = bc_Start; j <= bc_End; j++) {
+      for (int k = 0; k < 1; k++) {
+        if (strcmp(age_Group[j], "35 to 49 years") == 0) {
+          if (value[j] != 0) {
+            sum += value[j];
+            count++;
+          }
+        }
+      }
+    }
+    bc_Ave[8] = sum / count;
+    printf("1d) Diabetes average for British Columbia (35-49 years): %.2lf%%\n",
+           bc_Ave[8]);
+
+    count = 0;
+    sum = 0;
+    for (int j = bc_Start; j <= bc_End; j++) {
+      for (int k = 0; k < 1; k++) {
+        if (strcmp(age_Group[j], "50 to 64 years") == 0) {
+          if (value[j] != 0) {
+            sum += value[j];
+            count++;
+          }
+        }
+      }
+    }
+    bc_Ave[9] = sum / count;
+    printf("1d) Diabetes average for British Columbia (50-64 years): %.2lf%%\n",
+           bc_Ave[9]);
+
+    count = 0;
+    sum = 0;
+    for (int j = bc_Start; j <= bc_End; j++) {
+      for (int k = 0; k < 1; k++) {
+        if (strcmp(age_Group[j], "65 years and over") == 0) {
+          if (value[j] != 0) {
+            sum += value[j];
+            count++;
+          }
+        }
+      }
+    }
+    bc_Ave[10] = sum / count;
+    printf("1d) Diabetes average for British Columbia (65+ years): %.2lf%%\n",
+           bc_Ave[10]);
+
+    printf("\n");
+    /////// QUESTION 2 /////// 
+    printf("\n");
+    // initialize min and max variables
+    double min = que_Ave[0];
+    double max = que_Ave[0];
+    // initialize strings for province names
+    char *low_Loc = "Quebec";
+    char *high_Loc = "Quebec";
+
+    // loop through the arrays and compare with min and max variables
+    char *provinces[3] = {"British Columbia", "Alberta", "Ontario"};
+    double values[3] = {bc_Ave[0], alb_Ave[0], ont_Ave[0]};
+    for (int i = 0; i < 3; i++) {
+      if (values[i] < min) {
+        // update min variable and corresponding province name
+        min = values[i];
+        low_Loc = provinces[i];
+      }
+      if (values[i] > max) {
+        // update max variable and corresponding province name
+        max = values[i];
+        high_Loc = provinces[i];
+      }
+    }
+
+    printf(
+        "2) The province with the lowest diabetes average is: %s with %.2lf%%\n"
+        "   The province with the greatest diabetes average is: %s with "
+        "%.2lf%%\n",
+        low_Loc, min, high_Loc, max);
+
+    /////// QUESTION 3 /////// 
+    printf(
+        "\n3) Provinces with diabetes averages above the national average:\n");
+    printf("★------------------★--------★\n");
+    printf("| Province         | Average|\n");
+    printf("★------------------★--------★\n");
+
+    // check if each province's average is above national average and display if true
+    if (bc_Ave[0] > can_Ave[0]) {
+      printf("| British Columbia | %.2lf%% |\n", bc_Ave[0]);
+    }
+    if (ont_Ave[0] > can_Ave[0]) {
+      printf("| Ontario          | %.2lf%% |\n", ont_Ave[0]);
+    }
+    if (alb_Ave[0] > can_Ave[0]) {
+      printf("| Alberta          | %.2lf%% |\n", alb_Ave[0]);
+    }
+    if (que_Ave[0] > can_Ave[0]) {
+      printf("| Quebec           | %.2lf%% |\n", que_Ave[0]);
+    }
+    printf("★------------------★--------★\n");
+
+    printf(
+        "\n Provinces with diabetes averages below the national average:\n");
+    printf("★-----------------★------------------★\n");
+    printf("| Province        |     Average      |\n");
+    printf("★-----------------★------------------★\n");
+
+    // check if each province's average is below  national average and display if true
+    if (bc_Ave[0] < can_Ave[0]) {
+      printf("| British Columbia| %.2lf%%            |\n", bc_Ave[0]);
+    }
+    if (ont_Ave[0] < can_Ave[0]) {
+      printf("| Ontario         | %.2lf%%           |\n", ont_Ave[0]);
+    }
+    if (alb_Ave[0] < can_Ave[0]) {
+      printf("| Alberta         | %.2lf%%           |\n", alb_Ave[0]);
+    }
+    if (que_Ave[0] < can_Ave[0]) {
+      printf("| Quebec          | %.2lf%%           |\n", que_Ave[0]);
+    }
+    printf("★-----------------★------------------★\n");
+
+    /////// QUESTION 4 /////// 
+    printf("\n");
+    // initialize variables for the highest and lowest values and their locations
+    double high_Val = que_Ave[1];
+    int high_Year = 2015;
+    double low_Val = que_Ave[1];
+    int low_Year = 2015;
+
+    // loop through arrays and compare with highest and lowest value  and update them 
+    for (int i = 1; i <= 7; i++) {
+      if (que_Ave[i] > high_Val) {
+        high_Val = que_Ave[i];
+        high_Year = 2014 + i;
+        high_Loc = "Quebec";
+      } else if (que_Ave[i] < low_Val) {
+        low_Val = que_Ave[i];
+        low_Year = 2014 + i;
+        low_Loc = "Quebec";
+      }
+
+      if (bc_Ave[i] > high_Val) {
+        high_Val = bc_Ave[i];
+        high_Year = 2014 + i;
+        high_Loc = "British Columbia";
+      } else if (bc_Ave[i] < low_Val) {
+        low_Val = bc_Ave[i];
+        low_Year = 2014 + i;
+        low_Loc = "British Columbia";
+      }
+
+      if (alb_Ave[i] > high_Val) {
+        high_Val = alb_Ave[i];
+        high_Year = 2014 + i;
+        high_Loc = "Alberta";
+      } else if (alb_Ave[i] < low_Val) {
+        low_Val = alb_Ave[i];
+        low_Year = 2014 + i;
+        low_Loc = "Alberta";
+      }
+
+      if (ont_Ave[i] > high_Val) {
+        high_Val = ont_Ave[i];
+        high_Year = 2014 + i;
+        high_Loc = "Ontario";
+      } else if (ont_Ave[i] < low_Val) {
+        low_Val = ont_Ave[i];
+        low_Year = 2014 + i;
+        low_Loc = "Ontario";
+      }
+    }
+
+    // Print the results in structured table
+    printf("4) The Province and year with the highest diabetes average is:\n");
+    printf("☀----------------------☀--------☀\n");
+    printf("| Province             | Year   |\n");
+    printf("☀----------------------☀--------☀\n");
+    printf("| %-20s | %-6d |\n", high_Loc, high_Year);
+    printf("☀----------------------☀--------☀\n");
+
+    printf("\n");
+
+    printf("The Province and year with the lowest diabetes average is:\n");
+    printf("+----------------------+--------+\n");
+    printf("| Province             | Year   |\n");
+    printf("+----------------------+--------+\n");
+    printf("| %-20s | %-6d |\n", low_Loc, low_Year);
+    printf("+----------------------+--------+\n");
+
+    return 0;
+  }
+}
