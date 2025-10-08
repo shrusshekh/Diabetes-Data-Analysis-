@@ -2,7 +2,6 @@
 
 **Toronto Metropolitan University**  
 **Course:** CPS188 – Computer Programming Fundamentals 
-**Project Duration:** 4 Weeks  
 **Group Project**
 
 ---
