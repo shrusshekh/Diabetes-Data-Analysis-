@@ -5,7 +5,7 @@
 
 ---
 
-This project analyzes diabetes data to explore the relationship between age, BMI (Body Mass Index), and blood glucose levels using C programming and GNUPlot for visualization.
+This group project analyzes diabetes data to explore the relationship between age, BMI (Body Mass Index), and blood glucose levels using C programming and GNUPlot for visualization.
 
 --- 
 
