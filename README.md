@@ -2,7 +2,6 @@
 
 **Toronto Metropolitan University**  
 **Course:** CPS188 – Computer Programming Fundamentals 
-**Group Project**
 
 ---
 
